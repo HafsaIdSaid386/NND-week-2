@@ -255,7 +255,7 @@
                         <label for="testFile">Test CSV File (test.csv):</label>
                         <input type="file" id="testFile" accept=".csv">
                     </div>
-                    <button onclick="loadData()" id="loadBtn">📥 Load & Inspect Data</button>
+                    <button id="loadBtn">📥 Load & Inspect Data</button>
                 </div>
                 <div class="card">
                     <div id="dataStatus"></div>
@@ -281,7 +281,7 @@
                             Add IsAlone = (FamilySize == 1)
                         </label>
                     </div>
-                    <button onclick="preprocessData()" id="preprocessBtn">🔧 Preprocess Data</button>
+                    <button id="preprocessBtn">🔧 Preprocess Data</button>
                 </div>
                 <div class="card">
                     <div id="preprocessStatus"></div>
@@ -301,7 +301,7 @@
                         <li>Hidden Layer: Dense(16, 'relu')</li>
                         <li>Output Layer: Dense(1, 'sigmoid')</li>
                     </ul>
-                    <button onclick="createModel()" id="modelBtn">🏗️ Create Model</button>
+                    <button id="modelBtn">🏗️ Create Model</button>
                 </div>
                 <div class="card">
                     <div id="modelStatus"></div>
@@ -317,14 +317,14 @@
                 <div class="card">
                     <div class="form-group">
                         <label>Epochs: <span id="epochsValue">50</span></label>
-                        <input type="range" id="epochs" min="10" max="200" value="50" onchange="document.getElementById('epochsValue').textContent = this.value">
+                        <input type="range" id="epochs" min="10" max="200" value="50">
                     </div>
                     <div class="form-group">
                         <label>Batch Size: <span id="batchValue">32</span></label>
-                        <input type="range" id="batchSize" min="8" max="128" value="32" onchange="document.getElementById('batchValue').textContent = this.value">
+                        <input type="range" id="batchSize" min="8" max="128" value="32">
                     </div>
-                    <button onclick="trainModel()" id="trainBtn">🚀 Train Model</button>
-                    <button onclick="stopTraining()" class="btn-danger" id="stopBtn" disabled>⏹️ Stop Training</button>
+                    <button id="trainBtn">🚀 Train Model</button>
+                    <button id="stopBtn" class="btn-danger" disabled>⏹️ Stop Training</button>
                 </div>
                 <div class="card">
                     <div id="trainingStatus"></div>
@@ -340,13 +340,14 @@
                 <div class="card">
                     <div class="form-group">
                         <label>Classification Threshold: <span id="thresholdValue">0.5</span></label>
-                        <input type="range" id="threshold" min="0" max="1" step="0.01" value="0.5" onchange="updateThreshold(this.value)">
+                        <input type="range" id="threshold" min="0" max="1" step="0.01" value="0.5">
                     </div>
-                    <button onclick="evaluateModel()" id="evaluateBtn">📈 Evaluate Model</button>
+                    <button id="evaluateBtn">📈 Evaluate Model</button>
                 </div>
                 <div class="card">
                     <div class="metrics-display" id="metricsDisplay"></div>
                     <div id="rocChart"></div>
+                    <div id="confusionMatrix"></div>
                 </div>
             </div>
         </section>
@@ -356,9 +357,9 @@
             <h2 class="section-title">📤 Prediction & Export</h2>
             <div class="grid">
                 <div class="card">
-                    <button onclick="predictTestData()" id="predictBtn">🔮 Predict Test Data</button>
-                    <button onclick="exportModel()" class="btn-success">💾 Export Model</button>
-                    <button onclick="downloadPredictions()" class="btn-success" id="exportBtn" disabled>📥 Download Predictions</button>
+                    <button id="predictBtn">🔮 Predict Test Data</button>
+                    <button id="exportModelBtn" class="btn-success">💾 Export Model</button>
+                    <button id="exportBtn" class="btn-success" disabled>📥 Download Predictions</button>
                 </div>
                 <div class="card">
                     <div id="predictionStatus"></div>
