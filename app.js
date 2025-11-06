@@ -9,6 +9,7 @@ let trainingHistory = null;
 let validationData = null;
 let testPredictions = null;
 let currentThreshold = 0.5;
+let featureNames = [];
 
 // Dataset schema configuration - SWAP THIS FOR OTHER DATASETS
 const DATA_SCHEMA = {
@@ -18,6 +19,41 @@ const DATA_SCHEMA = {
     categorical: ['Sex', 'Pclass', 'Embarked'], // Categorical features for one-hot encoding
     numerical: ['Age', 'SibSp', 'Parch', 'Fare'] // Numerical features for standardization
 };
+
+// Initialize the application when the page loads
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('Initializing Titanic Classifier...');
+    
+    // Set up event listeners for range inputs
+    document.getElementById('epochs').addEventListener('input', function() {
+        document.getElementById('epochsValue').textContent = this.value;
+    });
+    
+    document.getElementById('batchSize').addEventListener('input', function() {
+        document.getElementById('batchValue').textContent = this.value;
+    });
+    
+    document.getElementById('threshold').addEventListener('input', function() {
+        document.getElementById('thresholdValue').textContent = this.value;
+        currentThreshold = parseFloat(this.value);
+        if (validationData) {
+            evaluateModel();
+        }
+    });
+    
+    // Set up button event listeners
+    document.getElementById('loadBtn').addEventListener('click', loadData);
+    document.getElementById('preprocessBtn').addEventListener('click', preprocessData);
+    document.getElementById('modelBtn').addEventListener('click', createModel);
+    document.getElementById('trainBtn').addEventListener('click', trainModel);
+    document.getElementById('stopBtn').addEventListener('click', stopTraining);
+    document.getElementById('evaluateBtn').addEventListener('click', evaluateModel);
+    document.getElementById('predictBtn').addEventListener('click', predictTestData);
+    document.getElementById('exportModelBtn').addEventListener('click', exportModel);
+    document.getElementById('exportBtn').addEventListener('click', downloadPredictions);
+    
+    console.log('Event listeners initialized');
+});
 
 // Load and inspect CSV data
 async function loadData() {
@@ -145,7 +181,7 @@ function displayDataInfo(trainData, testData) {
     html += `<div style="overflow-x: auto;"><table>`;
     html += `<tr>${Object.keys(trainData[0]).map(key => `<th>${key}</th>`).join('')}</tr>`;
     trainData.slice(0, 5).forEach(row => {
-        html += `<tr>${Object.values(row).map(val => `<td>${val}</td>`).join('')}</tr>`;
+        html += `<tr>${Object.values(row).map(val => `<td>${val !== null ? val : 'NULL'}</td>`).join('')}</tr>`;
     });
     html += `</table></div>`;
     
@@ -158,7 +194,7 @@ function calculateMissingValues(data) {
     const totalRows = data.length;
     
     Object.keys(data[0]).forEach(column => {
-        const missing = data.filter(row => row[column] === null || row[column] === '' || isNaN(row[column])).length;
+        const missing = data.filter(row => row[column] === null || row[column] === '' || (typeof row[column] === 'number' && isNaN(row[column]))).length;
         stats[column] = {
             missing: missing,
             percentage: ((missing / totalRows) * 100).toFixed(2)
@@ -173,7 +209,7 @@ function createExploratoryCharts(data) {
     // Survival by Sex
     const sexSurvival = {};
     data.forEach(row => {
-        if (row.Sex && row.Survived !== undefined) {
+        if (row.Sex && row.Survived !== undefined && row.Survived !== null) {
             const key = `${row.Sex}-${row.Survived}`;
             sexSurvival[key] = (sexSurvival[key] || 0) + 1;
         }
@@ -182,7 +218,7 @@ function createExploratoryCharts(data) {
     // Survival by Pclass
     const classSurvival = {};
     data.forEach(row => {
-        if (row.Pclass && row.Survived !== undefined) {
+        if (row.Pclass && row.Survived !== undefined && row.Survived !== null) {
             const key = `Class ${row.Pclass}-${row.Survived}`;
             classSurvival[key] = (classSurvival[key] || 0) + 1;
         }
@@ -225,6 +261,10 @@ function preprocessData() {
         const addFamilySize = document.getElementById('addFamilySize').checked;
         const addIsAlone = document.getElementById('addIsAlone').checked;
         
+        // Reset features to original
+        DATA_SCHEMA.features = ['Pclass', 'Sex', 'Age', 'SibSp', 'Parch', 'Fare', 'Embarked'];
+        DATA_SCHEMA.numerical = ['Age', 'SibSp', 'Parch', 'Fare'];
+        
         if (addFamilySize) {
             processedData.forEach(row => {
                 row.FamilySize = (row.SibSp || 0) + (row.Parch || 0) + 1;
@@ -245,13 +285,14 @@ function preprocessData() {
         processedData = handleMissingValues(processedData);
         
         // One-hot encode categorical variables
-        const { features, featureNames } = oneHotEncode(processedData);
+        const { features, featureNames: encodedFeatureNames } = oneHotEncode(processedData);
+        featureNames = encodedFeatureNames;
         
         // Standardize numerical features
         const standardizedFeatures = standardizeNumerical(features, featureNames);
         
         // Prepare target variable
-        const targets = processedData.map(row => row[DATA_SCHEMA.target]);
+        const targets = processedData.map(row => row[DATA_SCHEMA.target] || 0);
         
         // Convert to tensors
         const featureTensor = tf.tensor2d(standardizedFeatures);
@@ -302,7 +343,7 @@ function handleMissingValues(data) {
                 freq[row[col]] = (freq[row[col]] || 0) + 1;
             }
         });
-        modes[col] = Object.keys(freq).reduce((a, b) => freq[a] > freq[b] ? a : b);
+        modes[col] = Object.keys(freq).reduce((a, b) => freq[a] > freq[b] ? a : b, 'Unknown');
     });
     
     // Impute missing values
@@ -314,7 +355,7 @@ function handleMissingValues(data) {
             }
         });
         DATA_SCHEMA.categorical.forEach(col => {
-            if (!newRow[col]) {
+            if (!newRow[col] || newRow[col] === '') {
                 newRow[col] = modes[col] || 'Unknown';
             }
         });
@@ -330,7 +371,7 @@ function oneHotEncode(data) {
     
     // Initialize categories
     DATA_SCHEMA.categorical.forEach(col => {
-        const uniqueVals = [...new Set(data.map(row => row[col]))];
+        const uniqueVals = [...new Set(data.map(row => row[col]).filter(val => val !== null && val !== undefined))];
         categories[col] = uniqueVals;
         uniqueVals.forEach(val => {
             featureNames.push(`${col}_${val}`);
@@ -441,14 +482,21 @@ function createModel() {
         // Display model summary
         summaryDiv.innerHTML = `<h4>Model Summary:</h4>`;
         
-        let summaryText = '';
-        model.summary(null, null, (line) => {
-            summaryText += line + '\n';
+        let summaryText = 'Layer (type)                 Output shape              Param #\n';
+        summaryText += '=================================================================\n';
+        
+        model.layers.forEach(layer => {
+            const outputShape = layer.outputShape ? `[null, ${layer.outputShape[1]}]` : 'multiple';
+            const params = layer.countParams();
+            summaryText += `${layer.name.padEnd(20)} ${outputShape.padEnd(25)} ${params}\n`;
         });
         
-        setTimeout(() => {
-            summaryDiv.innerHTML += `<pre>${summaryText}</pre>`;
-        }, 100);
+        summaryText += `=================================================================\n`;
+        summaryText += `Total params: ${model.countParams()}\n`;
+        summaryText += `Trainable params: ${model.countParams()}\n`;
+        summaryText += `Non-trainable params: 0\n`;
+        
+        summaryDiv.innerHTML += `<pre style="background: #f8f9fa; padding: 15px; border-radius: 5px; overflow-x: auto;">${summaryText}</pre>`;
         
         statusDiv.innerHTML = '<div class="status status-success">Model created successfully!</div>';
         
@@ -498,21 +546,15 @@ async function trainModel() {
             targets: valTargets
         };
         
-        // Set up callbacks for visualization and early stopping
-        const callbacks = {
-            onEpochEnd: (epoch, logs) => {
-                trainingHistory = logs;
-                tfvis.show.fitCallbacks(
-                    { name: 'Training Performance', tab: 'Training' },
-                    ['loss', 'val_loss', 'acc', 'val_acc']
-                );
-            },
-            onTrainEnd: () => {
-                trainBtn.disabled = false;
-                stopBtn.disabled = true;
-                statusDiv.innerHTML = '<div class="status status-success">Training completed!</div>';
+        // Set up callbacks for visualization
+        const callbacks = tfvis.show.fitCallbacks(
+            { name: 'Training Performance', tab: 'Training' },
+            ['loss', 'val_loss', 'acc', 'val_acc'],
+            {
+                callbacks: ['onEpochEnd', 'onBatchEnd'],
+                height: 300
             }
-        };
+        );
         
         // Train the model
         await model.fit(trainFeatures, trainTargets, {
@@ -522,6 +564,10 @@ async function trainModel() {
             callbacks: callbacks,
             verbose: 1
         });
+        
+        trainBtn.disabled = false;
+        stopBtn.disabled = true;
+        statusDiv.innerHTML = '<div class="status status-success">Training completed!</div>';
         
     } catch (error) {
         console.error('Error training model:', error);
@@ -542,6 +588,7 @@ function stopTraining() {
 // Evaluate the model
 async function evaluateModel() {
     const metricsDiv = document.getElementById('metricsDisplay');
+    const confusionDiv = document.getElementById('confusionMatrix');
     
     if (!model || !validationData) {
         alert('Please train the model first');
@@ -587,76 +634,7 @@ async function evaluateModel() {
         plotROCCurve(trueLabels, probs);
         
         // Display confusion matrix
-        displayConfusionMatrix(metrics.confusionMatrix);
+        displayConfusionMatrix(metrics.confusionMatrix, confusionDiv);
         
     } catch (error) {
-        console.error('Error evaluating model:', error);
-        alert('Error evaluating model: ' + error.message);
-    }
-}
-
-// Calculate classification metrics
-function calculateMetrics(trueLabels, probabilities, threshold) {
-    let tp = 0, fp = 0, tn = 0, fn = 0;
-    
-    // Calculate confusion matrix
-    for (let i = 0; i < trueLabels.length; i++) {
-        const pred = probabilities[i] >= threshold ? 1 : 0;
-        const actual = trueLabels[i];
-        
-        if (pred === 1 && actual === 1) tp++;
-        else if (pred === 1 && actual === 0) fp++;
-        else if (pred === 0 && actual === 0) tn++;
-        else if (pred === 0 && actual === 1) fn++;
-    }
-    
-    // Calculate metrics
-    const accuracy = (tp + tn) / (tp + fp + tn + fn);
-    const precision = tp + fp === 0 ? 0 : tp / (tp + fp);
-    const recall = tp + fn === 0 ? 0 : tp / (tp + fn);
-    const f1 = precision + recall === 0 ? 0 : 2 * (precision * recall) / (precision + recall);
-    
-    // Calculate AUC-ROC
-    const auc = calculateAUC(trueLabels, probabilities);
-    
-    return {
-        accuracy,
-        precision,
-        recall,
-        f1,
-        auc,
-        confusionMatrix: { tp, fp, tn, fn }
-    };
-}
-
-// Calculate AUC-ROC
-function calculateAUC(trueLabels, probabilities) {
-    // Simple implementation of AUC calculation
-    const scores = probabilities.map((prob, idx) => ({ prob, label: trueLabels[idx] }));
-    scores.sort((a, b) => b.prob - a.prob);
-    
-    let auc = 0;
-    let fp = 0, tp = 0;
-    let fpPrev = 0, tpPrev = 0;
-    
-    const totalPos = trueLabels.filter(label => label === 1).length;
-    const totalNeg = trueLabels.filter(label => label === 0).length;
-    
-    scores.forEach(score => {
-        if (score.label === 1) {
-            tp++;
-        } else {
-            fp++;
-        }
-        
-        auc += (fp - fpPrev) * (tp + tpPrev) / 2;
-        fpPrev = fp;
-        tpPrev = tp;
-    });
-    
-    auc += (totalNeg - fpPrev) * (totalPos + tpPrev) / 2;
-    return auc / (totalPos * totalNeg);
-}
-
-// Plot ROC curve
-function
+        console.error('Error
