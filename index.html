@@ -2,323 +2,149 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <meta
-    name="viewport"
-    content="width=device-width, initial-scale=1, minimum-scale=1"
-  />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Titanic Binary Classifier (TF.js)</title>
 
-  <!-- TensorFlow.js & tfjs-vis (latest) -->
+  <!-- libs -->
   <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest"></script>
   <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-vis@latest"></script>
-
-  <!-- PapaParse for robust CSV parsing (handles commas-in-quotes, etc.) -->
   <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
 
   <style>
-    :root {
-      --bg: #0b1020;
-      --card: #121836;
-      --muted: #9bb0d1;
-      --text: #e9efff;
-      --accent: #6aa6ff;
-      --accent-2: #7ce2b1;
-      --danger: #ff6a6a;
-    }
-    * { box-sizing: border-box; }
-    html, body {
-      height: 100%;
-      margin: 0;
-      background: radial-gradient(1200px 600px at 10% -10%, #20346a33, transparent) fixed,
-                  radial-gradient(1200px 800px at 80% -20%, #1e2a6033, transparent) fixed,
-                  var(--bg);
-      color: var(--text);
-      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial;
-      line-height: 1.5;
-    }
-    header {
-      padding: 24px 16px;
-      text-align: center;
-    }
-    header h1 { margin: 0 0 6px; font-size: clamp(22px, 4vw, 32px); }
-    header p { margin: 0; color: var(--muted); }
-
-    .container {
-      width: min(1100px, 92vw);
-      margin: 0 auto 80px;
-      display: grid;
-      grid-template-columns: 1fr;
-      gap: 16px;
-    }
-    .grid-2 {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 16px;
-    }
-    @media (max-width: 980px) {
-      .grid-2 { grid-template-columns: 1fr; }
-    }
-
-    .card {
-      background: linear-gradient(180deg, #121836, #0f1430);
-      border: 1px solid #2a3569;
-      border-radius: 16px;
-      padding: 16px;
-      box-shadow: 0 10px 30px #0008, inset 0 1px 0 #ffffff0a;
-    }
-    .card h2 {
-      margin: 0 0 10px;
-      font-size: 18px;
-      letter-spacing: 0.3px;
-    }
-    .card p {
-      margin: 0 0 10px;
-      color: var(--muted);
-      font-size: 14px;
-    }
-
-    .row { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
-    .row > * { flex: 0 0 auto; }
-
-    input[type="file"] {
-      display: inline-block;
-      padding: 8px 10px;
-      border: 1px dashed #33407a;
-      border-radius: 12px;
-      background: #0c1130;
-      color: var(--muted);
-      max-width: 100%;
-    }
-    .btn {
-      appearance: none;
-      border: 0;
-      border-radius: 12px;
-      padding: 10px 14px;
-      background: linear-gradient(180deg, #2e57a4, #224282);
-      color: white;
-      font-weight: 600;
-      cursor: pointer;
-      transition: transform 0.06s ease, filter 0.2s ease;
-    }
-    .btn:hover { filter: brightness(1.05); }
-    .btn:active { transform: translateY(1px); }
-    .btn.secondary {
-      background: linear-gradient(180deg, #2e8f72, #236b55);
-    }
-    .btn.danger {
-      background: linear-gradient(180deg, #a43e3e, #7a2f2f);
-    }
-    .tag {
-      display: inline-block;
-      padding: 4px 8px;
-      border-radius: 999px;
-      background: #1a2350;
-      border: 1px solid #2d3a7d;
-      color: #b9c8f0;
-      font-size: 12px;
-    }
-    .muted { color: var(--muted); }
-    .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace; }
-
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      border: 1px solid #263168;
-      border-radius: 12px;
-      overflow: hidden;
-      font-size: 13px;
-    }
-    th, td {
-      border-bottom: 1px solid #232c59;
-      padding: 8px 10px;
-      text-align: left;
-    }
-    th { background: #0e1537; color: #bcd0ff; }
-    tbody tr:nth-child(even) { background: #0d1332; }
-
-    .slider-row {
-      display: grid;
-      grid-template-columns: auto 1fr auto;
-      gap: 12px;
-      align-items: center;
-    }
-    input[type="range"] {
-      width: 100%;
-      accent-color: var(--accent);
-      height: 6px;
-      border-radius: 999px;
-      background: #20306b;
-      outline: none;
-    }
-    .pill {
-      display: inline-block;
-      padding: 3px 8px;
-      border-radius: 999px;
-      background: #142157;
-      border: 1px solid #2b3e8a;
-      color: #cfe0ff;
-      font-size: 12px;
-    }
-
-    .vis {
-      background: #0e1537;
-      border: 1px solid #24306b;
-      border-radius: 10px;
-      padding: 8px;
-      min-height: 160px;
-      overflow: auto;
-    }
-    .note { font-size: 12px; color: #9fb3e0; }
-    footer {
-      margin: 30px auto 60px;
-      width: min(1100px, 92vw);
-      color: var(--muted);
-      font-size: 13px;
-    }
+    :root { --bg:#0b1020; --card:#121836; --muted:#9bb0d1; --text:#e9efff; }
+    *{box-sizing:border-box} html,body{margin:0;height:100%;background:var(--bg);color:var(--text);font-family:system-ui,Segoe UI,Roboto,Arial}
+    header{padding:24px 16px;text-align:center}
+    header h1{margin:0 0 6px;font-size:clamp(22px,4vw,32px)}
+    header p{margin:0;color:var(--muted)}
+    .container{width:min(1100px,92vw);margin:0 auto 80px;display:grid;gap:16px}
+    .card{background:linear-gradient(180deg,#121836,#0f1430);border:1px solid #2a3569;border-radius:16px;padding:16px}
+    .card h2{margin:0 0 10px;font-size:18px}
+    .muted{color:var(--muted)} .mono{font-family:ui-monospace,Menlo,Consolas,monospace}
+    .row{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+    input[type=file]{padding:8px 10px;border:1px dashed #33407a;border-radius:12px;background:#0c1130;color:var(--muted)}
+    .btn{border:0;border-radius:12px;padding:10px 14px;background:#2e57a4;color:#fff;font-weight:600;cursor:pointer}
+    .btn.secondary{background:#2e8f72} .btn.danger{background:#a43e3e}
+    .vis{background:#0e1537;border:1px solid #24306b;border-radius:10px;padding:8px;min-height:140px;overflow:auto}
+    table{width:100%;border-collapse:collapse;border:1px solid #263168;border-radius:12px;overflow:hidden;font-size:13px}
+    th,td{border-bottom:1px solid #232c59;padding:8px 10px;text-align:left}
+    th{background:#0e1537;color:#bcd0ff} tbody tr:nth-child(even){background:#0d1332}
+    .grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px} @media(max-width:980px){.grid2{grid-template-columns:1fr}}
+    .slider-row{display:grid;grid-template-columns:auto 1fr auto;gap:12px;align-items:center}
+    input[type=range]{width:100%}
+    .tag{display:inline-block;padding:3px 8px;border-radius:999px;background:#142157;border:1px solid #2b3e8a;color:#cfe0ff;font-size:12px}
   </style>
 </head>
 <body>
-  <header>
-    <h1>Titanic Binary Classifier — TensorFlow.js (Shallow NN)</h1>
-    <p>Load CSVs, preprocess in-browser, train, evaluate (ROC/AUC), and export predictions. No server.</p>
-  </header>
+<header>
+  <h1>Titanic Binary Classifier — TensorFlow.js (Shallow NN)</h1>
+  <p>Load CSVs, preprocess in-browser, train with live charts (ROC/AUC), export predictions. No server.</p>
+</header>
 
-  <main class="container">
-    <!-- DATA LOAD -->
-    <section class="card" id="sec-data">
-      <h2>Data Load</h2>
-      <p>Load <span class="tag">train.csv</span> (with Survived) and <span class="tag">test.csv</span> (Kaggle schema). Robust CSV parsing (commas-in-quotes supported).</p>
-      <div class="row">
-        <label class="pill">Train CSV</label>
-        <input type="file" id="trainFile" accept=".csv" />
-        <label class="pill">Test CSV</label>
-        <input type="file" id="testFile" accept=".csv" />
-        <button class="btn" id="btnLoad">Load & Inspect</button>
-        <button class="btn danger" id="btnReset">Reset</button>
+<main class="container">
+  <!-- DATA -->
+  <section class="card">
+    <h2>Data Load</h2>
+    <p>Choose <span class="tag">train.csv</span> (with Survived) and optional <span class="tag">test.csv</span>. Robust CSV parsing.</p>
+    <div class="row">
+      <label class="tag">Train CSV</label><input type="file" id="trainFile" accept=".csv">
+      <label class="tag">Test CSV</label><input type="file" id="testFile" accept=".csv">
+      <button class="btn" id="btnLoad">Load & Inspect</button>
+      <button class="btn danger" id="btnReset">Reset</button>
+    </div>
+    <div class="grid2" style="margin-top:12px">
+      <div><h3 class="muted">Preview (train)</h3><div id="trainPreview" class="vis"></div></div>
+      <div><h3 class="muted">Info</h3><div id="datasetInfo" class="vis mono"></div></div>
+    </div>
+    <div class="grid2" style="margin-top:12px">
+      <div><h3 class="muted">Survival by Sex</h3><div id="barSex" class="vis"></div></div>
+      <div><h3 class="muted">Survival by Pclass</h3><div id="barPclass" class="vis"></div></div>
+    </div>
+  </section>
+
+  <!-- PREPROCESS -->
+  <section class="card">
+    <h2>Preprocessing</h2>
+    <p>Age→median, Embarked→mode, standardize Age/Fare, one-hot Sex/Pclass/Embarked. Optional: FamilySize, IsAlone.</p>
+    <div class="row">
+      <label><input type="checkbox" id="toggleFamily" checked> Add FamilySize</label>
+      <label><input type="checkbox" id="toggleIsAlone" checked> Add IsAlone</label>
+      <button class="btn secondary" id="btnPreprocess">Run Preprocessing</button>
+    </div>
+    <div id="preOut" class="vis mono" style="margin-top:10px"></div>
+  </section>
+
+  <!-- MODEL -->
+  <section class="card">
+    <h2>Model</h2>
+    <p>Dense(16,'relu') → Dense(1,'sigmoid'), optimizer <span class="tag">adam</span>, loss <span class="tag">binaryCrossentropy</span>, metric <span class="tag">accuracy</span>.</p>
+    <div class="row">
+      <button class="btn" id="btnBuild">Build Model</button>
+      <button class="btn" id="btnSummary">Show Summary</button>
+    </div>
+    <div id="modelSummary" class="vis mono" style="margin-top:10px"></div>
+  </section>
+
+  <!-- TRAIN -->
+  <section class="card">
+    <h2>Training</h2>
+    <p>80/20 stratified split, 50 epochs, batch 32, early stopping (patience=5). Charts appear in the tfjs-vis visor.</p>
+    <div class="row">
+      <button class="btn" id="btnTrain">Train</button>
+      <span id="trainStatus" class="mono muted"></span>
+    </div>
+    <div class="grid2" style="margin-top:12px">
+      <div><h3 class="muted">Loss (visor)</h3><div id="lossContainer" class="vis"></div></div>
+      <div><h3 class="muted">Accuracy (visor)</h3><div id="accContainer" class="vis"></div></div>
+    </div>
+  </section>
+
+  <!-- METRICS -->
+  <section class="card">
+    <h2>Metrics</h2>
+    <div class="grid2">
+      <div>
+        <h3 class="muted">ROC Curve</h3>
+        <div id="rocContainer" class="vis"></div>
+        <div id="aucNote" class="muted mono" style="margin-top:6px"></div>
       </div>
-      <div class="grid-2" style="margin-top:12px;">
-        <div>
-          <h3 class="muted">Preview (train)</h3>
-          <div id="trainPreview" class="vis"></div>
+      <div>
+        <h3 class="muted">Threshold & Confusion Matrix</h3>
+        <div class="slider-row">
+          <span class="mono muted">0.00</span>
+          <input type="range" id="thrSlider" min="0" max="1" step="0.01" value="0.5">
+          <span class="mono muted">1.00</span>
         </div>
-        <div>
-          <h3 class="muted">Info</h3>
-          <div id="datasetInfo" class="vis mono"></div>
-        </div>
+        <div style="margin-top:6px" class="mono">Threshold: <span id="thrVal" class="tag">0.50</span></div>
+        <div id="cmContainer" class="vis mono" style="margin-top:8px"></div>
+        <div id="prfContainer" class="vis mono" style="margin-top:8px"></div>
       </div>
-      <div class="grid-2" style="margin-top:12px;">
-        <div>
-          <h3 class="muted">Survival by Sex</h3>
-          <div id="barSex" class="vis"></div>
-        </div>
-        <div>
-          <h3 class="muted">Survival by Pclass</h3>
-          <div id="barPclass" class="vis"></div>
-        </div>
-      </div>
-    </section>
+    </div>
+  </section>
 
-    <!-- PREPROCESS -->
-    <section class="card" id="sec-pre">
-      <h2>Preprocessing</h2>
-      <p>Impute: <span class="tag">Age → median</span>, <span class="tag">Embarked → mode</span>. Standardize: <span class="tag">Age</span>, <span class="tag">Fare</span>. One-hot: <span class="tag">Sex</span>, <span class="tag">Pclass</span>, <span class="tag">Embarked</span>. Optional engineered features.</p>
-      <div class="row">
-        <label><input type="checkbox" id="toggleFamily" checked /> Add FamilySize</label>
-        <label><input type="checkbox" id="toggleIsAlone" checked /> Add IsAlone</label>
-        <button class="btn secondary" id="btnPreprocess">Run Preprocessing</button>
-      </div>
-      <div style="margin-top:10px;">
-        <div id="preOut" class="vis mono"></div>
-      </div>
-    </section>
+  <!-- PREDICT -->
+  <section class="card">
+    <h2>Prediction & Export</h2>
+    <div class="row">
+      <button class="btn secondary" id="btnPredict">Predict</button>
+      <button class="btn" id="btnExportSub">Export submission.csv</button>
+      <button class="btn" id="btnExportProbs">Export probabilities.csv</button>
+      <button class="btn" id="btnSaveModel">Download Model</button>
+    </div>
+    <div id="predictNote" class="muted" style="margin-top:8px"></div>
+  </section>
 
-    <!-- MODEL -->
-    <section class="card" id="sec-model">
-      <h2>Model</h2>
-      <p>Shallow NN: Dense(16, 'relu') → Dense(1, 'sigmoid'). Optimizer: <span class="tag">adam</span>, Loss: <span class="tag">binaryCrossentropy</span>, Metric: <span class="tag">accuracy</span>.</p>
-      <div class="row">
-        <button class="btn" id="btnBuild">Build Model</button>
-        <button class="btn" id="btnSummary">Show Summary</button>
-      </div>
-      <div id="modelSummary" class="vis mono" style="margin-top:10px;"></div>
-    </section>
+  <!-- DEPLOY -->
+  <section class="card">
+    <h2>Deployment Notes</h2>
+    <ul>
+      <li>Create a public GitHub repo.</li>
+      <li>Add <span class="mono">index.html</span> and <span class="mono">app.js</span>.</li>
+      <li>Enable GitHub Pages → Branch: <b>main</b>, Folder: <b>/ (root)</b>.</li>
+      <li>Open the URL and test.</li>
+    </ul>
+  </section>
+</main>
 
-    <!-- TRAINING -->
-    <section class="card" id="sec-train">
-      <h2>Training</h2>
-      <p>80/20 stratified split, 50 epochs, batch 32, early stopping (patience=5). Live charts via tfjs-vis.</p>
-      <div class="row">
-        <button class="btn" id="btnTrain">Train</button>
-        <span id="trainStatus" class="muted mono"></span>
-      </div>
-      <div class="grid-2" style="margin-top:12px;">
-        <div>
-          <h3 class="muted">Loss</h3>
-          <div class="vis" id="lossContainer"></div>
-        </div>
-        <div>
-          <h3 class="muted">Accuracy</h3>
-          <div class="vis" id="accContainer"></div>
-        </div>
-      </div>
-    </section>
-
-    <!-- METRICS -->
-    <section class="card" id="sec-metrics">
-      <h2>Metrics</h2>
-      <p>Compute ROC curve & AUC on validation set. Adjust decision threshold and see Confusion Matrix / Precision / Recall / F1 update live.</p>
-      <div class="grid-2">
-        <div>
-          <h3 class="muted">ROC Curve</h3>
-          <div class="vis" id="rocContainer"></div>
-          <div class="note" id="aucNote"></div>
-        </div>
-        <div>
-          <h3 class="muted">Threshold & Confusion Matrix</h3>
-          <div class="slider-row">
-            <span class="muted mono">0.00</span>
-            <input type="range" id="thrSlider" min="0" max="1" step="0.01" value="0.5" />
-            <span class="muted mono">1.00</span>
-          </div>
-          <div style="margin-top:6px;" class="mono">
-            Threshold: <span id="thrVal" class="tag">0.50</span>
-          </div>
-          <div id="cmContainer" class="vis mono" style="margin-top:8px;"></div>
-          <div id="prfContainer" class="vis mono" style="margin-top:8px;"></div>
-        </div>
-      </div>
-    </section>
-
-    <!-- PREDICT & EXPORT -->
-    <section class="card" id="sec-predict">
-      <h2>Prediction & Export</h2>
-      <p>Predict probabilities for <span class="tag">test.csv</span>, apply threshold, export <span class="tag">submission.csv</span> (PassengerId, Survived), <span class="tag">probabilities.csv</span>, or download the model.</p>
-      <div class="row">
-        <button class="btn secondary" id="btnPredict">Predict</button>
-        <button class="btn" id="btnExportSub">Export submission.csv</button>
-        <button class="btn" id="btnExportProbs">Export probabilities.csv</button>
-        <button class="btn" id="btnSaveModel">Download Model</button>
-      </div>
-      <div id="predictNote" class="note" style="margin-top:8px;"></div>
-    </section>
-
-    <!-- DEPLOYMENT NOTES -->
-    <section class="card" id="sec-deploy">
-      <h2>Deployment Notes</h2>
-      <ul>
-        <li>Create a public GitHub repo.</li>
-        <li>Add exactly two files: <span class="mono">index.html</span> and <span class="mono">app.js</span>.</li>
-        <li>Commit to <span class="tag">main</span>, then enable <b>GitHub Pages</b> for the repository (Source: <b>Deploy from a branch</b>, Branch: <b>main</b>, Folder: <b>/ (root)</b>).</li>
-        <li>Open the published URL and test.</li>
-      </ul>
-    </section>
-  </main>
-
-  <footer>
-    <p>Schema: Target <span class="mono">Survived</span> (0/1). Features: <span class="mono">Pclass, Sex, Age, SibSp, Parch, Fare, Embarked</span>. Exclude: <span class="mono">PassengerId</span>. <br/>
-       Reuse note: You can swap the schema for other datasets—see comments in <span class="mono">app.js</span>.</p>
-  </footer>
-
-  <script src="./app.js"></script>
+<script src="./app.js"></script>
 </body>
 </html>
